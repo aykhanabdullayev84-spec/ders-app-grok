@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DƏRS — Real-Time</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body{background:#0F172A;color:white}</style>
+</head>
+<body class="min-h-screen flex items-center justify-center text-center">
+<div>
+  <h1 class="text-7xl font-black mb-6">DƏRS <span class="text-amber-400">🧶 LIVE</span></h1>
+  <button onclick="location.href='app.html'" class="px-16 py-8 text-3xl font-black bg-gradient-to-r from-amber-400 to-orange-500 text-black rounded-3xl">HƏMƏN BAŞLA</button>
+</div>
+</body>
+</html>

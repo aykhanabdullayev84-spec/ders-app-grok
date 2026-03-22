@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<title>DƏRS ADMIN — REAL-TIME</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-zinc-950 text-white p-8">
+<div class="max-w-6xl mx-auto">
+  <h1 class="text-6xl font-black mb-2">COMMAND CENTER <span class="text-green-400 text-2xl">● LIVE</span></h1>
+  <div id="liveCount" class="text-5xl font-black text-emerald-400">47 nəfər indi öyrənir</div>
+  <div class="mt-12">
+    <h2 class="text-2xl mb-4">Live Leaderboard</h2>
+    <table id="leaderboard" class="w-full"></table>
+  </div>
+</div>
+<script>
+const supabase = Supabase.createClient('https://YOUR-PROJECT.supabase.co', 'eyJ...'); // ← buranı dəyiş
+
+supabase.channel('live-admin')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadLiveData)
+  .subscribe();
+
+async function loadLiveData() {
+  const { data } = await supabase.from('profiles').select('name, xp, city').order('xp', { ascending: false }).limit(10);
+  document.getElementById('liveCount').textContent = data.length * 5 + 30 + ' nəfər indi öyrənir';
+  document.getElementById('leaderboard').innerHTML = data.map(u => `<tr><td>${u.name}</td><td class="text-amber-400">${u.xp} XP</td></tr>`).join('');
+}
+loadLiveData();
+</script>
+</body>
+</html>

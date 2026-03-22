@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DƏRS — Real-Time</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<style>
+:root{--karabakh:#B91C1C;--samovar:#F59E0B;--caspian:#0284C7}
+body{background:#0F172A;color:white}
+.carpet-knot{width:32px;height:32px;border-radius:9999px;transition:all .4s}
+.toast{position:fixed;bottom:20px;right:20px;background:#1E2937;border:2px solid #F59E0B;padding:16px 24px;border-radius:16px;z-index:9999}
+</style>
+</head>
+<body class="min-h-screen pt-20 px-6 max-w-2xl mx-auto">
+
+<nav class="fixed top-0 inset-x-0 bg-black/90 backdrop-blur p-4 flex justify-between z-50">
+  <div class="text-3xl font-black">DƏRS <span class="text-amber-400">🧶 LIVE</span></div>
+</nav>
+
+<div id="home">
+  <h1 class="text-5xl font-black text-center mb-8">Sənin Xalçan <span id="liveUsers" class="text-xs bg-green-500 px-3 py-1 rounded-full">47 nəfər online</span></h1>
+  <div id="carpet" class="grid grid-cols-7 gap-4 bg-[#1E2937] p-8 rounded-3xl"></div>
+  <button onclick="startLesson()" class="mt-10 w-full py-8 text-3xl font-black bg-gradient-to-r from-amber-400 to-orange-500 text-black rounded-3xl">4 DƏQİQƏLİK DƏRSƏ BAŞLA</button>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+// ================== SUPABASE CONFIG (BURANI DƏYİŞ) ==================
+const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ← buranı dəyiş
+
+const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let user = null;
+let carpetData = [];
+
+async function initRealtime() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) user = session.user;
+
+  supabase.channel('carpet-sync')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user?.id}` }, (payload) => {
+      carpetData = payload.new.carpet_data || [];
+      renderCarpet();
+      showToast('Xalçan yeniləndi! 🧶');
+    })
+    .subscribe();
+
+  supabase.channel('broadcast')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'broadcasts' }, (payload) => {
+      showToast(payload.new.message);
+      if (payload.new.event === 'lesson_complete') confetti({particleCount:150});
+    })
+    .subscribe();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 4000);
+}
+
+async function completeLesson() {
+  carpetData.push(Date.now());
+  await supabase.from('profiles').update({ carpet_data: carpetData }).eq('id', user.id);
+  await supabase.from('broadcasts').insert({ event: 'lesson_complete', message: 'Kimisə dərs bitirdi! 🔥' });
+  renderCarpet();
+  confetti({particleCount:300});
+}
+
+function renderCarpet() {
+  const grid = document.getElementById('carpet');
+  grid.innerHTML = '';
+  for (let i = 0; i < 49; i++) {
+    const knot = document.createElement('div');
+    knot.className = `carpet-knot flex items-center justify-center text-3xl shadow-inner ${(i < carpetData.length) ? 'bg-red-600' : 'bg-zinc-700'}`;
+    knot.textContent = i < carpetData.length ? '🧶' : '⬜';
+    grid.appendChild(knot);
+  }
+}
+
+async function startLesson() {
+  completeLesson(); // demo
+}
+
+initRealtime();
+</script>
+</body>
+</html>
